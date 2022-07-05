@@ -4,21 +4,43 @@ from threading import Thread, Timer
 import emoji as moji
 import time
 
-def sender(user_id, text=''):       
-    vk.messages.send(user_id = user_id, message = text, random_id = 0)
+def sender(vkapi, user_id, text=''):       
+    vkapi.messages.send(user_id = user_id, message = text, random_id = 0)
 
-token = input('Access token: ')
-session = vk_api.VkApi(token = token)
-vk = session.get_api()
+def create_sessions():
+    global vkapiList
+    with open('tokens.txt', 'r') as file:
+        try:
+            for line in file:
+                session = vk_api.VkApi(token = line)
+                vk = session.get_api()
+                vkapiList.append(vk)
+        except:
+            print('No access tokens in the file tokens.txt. Enter one and more tokens.')           
 
-link = input('Link of user: ')
-screen_name = link.split('/')[3]
-user_id = vk.utils.resolveScreenName(screen_name=screen_name)['object_id']
+def get_users():
+    global user_ids
+    with open('links.txt', 'r') as file:
+        try:
+            for line in file:
+                screen_name = line.split('/')[3]
+                user_id = vkapiList[0].utils.resolveScreenName(screen_name=screen_name)['object_id']
+                user_ids.append(user_id)
+        except:
+            print('No links in the file links.txt. Enter one and more links.')    
+
+vkapiList = []
+user_ids = []
+
+create_sessions()
+get_users()
 
 count = int(input('Times to send messages: '))
 text = input('Message text: ')
 
 for i in range(count):
-    sender(user_id, text)
+    for vkapi in vkapiList:
+        for user_id in user_ids:
+            sender(vkapi, user_id, text)
 
 
